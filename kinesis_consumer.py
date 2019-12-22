@@ -19,6 +19,7 @@ def convert_str(s):
 
 def get_coupon_complete_data(coupon_id):
   logger.info('## COUPON ID TO GET')
+  logger.info(coupon_id)
   params['couponId'] = coupon_id
   req = requests.get(URL, params=params, headers=headers)
 
@@ -47,7 +48,6 @@ def lambda_handler(event, context):
         if operation_type == 'WriteRowsEvent':
           logger.info('## WRITE ROWS EVENT')
           row = data['row']['values']
-          logger.info(row)
 
           coupon_id = row['id']
           coupon_data = get_coupon_complete_data(coupon_id)
