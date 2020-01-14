@@ -8,8 +8,9 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-URL = os.environ["BC_HOST"]
+BC_ADMIN_URL = os.environ["BC_HOST"]
 BC_KEY = os.environ["BC_KEY"]
+FINANCIAL_URL = os.environ["FINANCIAL_URL"]
 params = {"couponId": None}
 headers = {"Authorization": BC_KEY}
 
@@ -22,7 +23,7 @@ def get_coupon_complete_data(coupon_id):
     logger.info("## COUPON ID TO GET")
     logger.info(coupon_id)
     params["couponId"] = coupon_id
-    req = requests.get(URL, params=params, headers=headers)
+    req = requests.get(BC_ADMIN_URL, params=params, headers=headers)
 
     logger.info("## DATA FROM BC API")
     logger.info(req.json())
@@ -53,6 +54,10 @@ def lambda_handler(event, context):
                 coupon_id = row["id"]
                 coupon_data = get_coupon_complete_data(coupon_id)
 
+                fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data))
+                logger.info("## RESPONSE FROM FINANCIAL API:")
+                logger.info(fin_call.json())
+
             if operation_type == "UpdateRowsEvent":
                 logger.info("## UPDATE ROWS EVENT")
                 # before_values = data['row']['before_values']
@@ -60,8 +65,6 @@ def lambda_handler(event, context):
 
                 coupon_id = after_values_row["id"]
                 coupon_data = get_coupon_complete_data(coupon_id)
-
-            # TODO: call Financial API to save/update the coupon complete data
 
     return {
         "statusCode": 200,
