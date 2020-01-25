@@ -12,10 +12,8 @@ BC_ADMIN_URL = os.environ["BC_ADMIN_URL"]
 BC_KEY = os.environ["BC_KEY"]
 FINANCIAL_URL = os.environ["FINANCIAL_URL"]
 params = {"couponId": None}
-headers = {
-    "Authorization": BC_KEY,
-    "Content-Type": "application/json"
-}
+auth_dict = { "Authorization": BC_KEY }
+content_type_dict = { "Content-Type": "application/json" }
 
 # Convert bytes to str, if required
 def convert_str(s):
@@ -26,7 +24,7 @@ def get_coupon_complete_data(coupon_id):
     logger.info("## COUPON ID TO GET")
     logger.info(coupon_id)
     params["couponId"] = coupon_id
-    req = requests.get(BC_ADMIN_URL, params=params, headers=headers)
+    req = requests.get(BC_ADMIN_URL, params=params, headers={**auth_dict, **content_type_dict})
 
     logger.info("## DATA FROM BC API")
     logger.info(req.json())
@@ -57,7 +55,7 @@ def lambda_handler(event, context):
                 coupon_id = row["id"]
                 coupon_data = get_coupon_complete_data(coupon_id)
 
-                fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data))
+                fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data), headers=content_type_dict)
                 logger.info("## RESPONSE FROM FINANCIAL API:")
                 if fin_call.status_code == 200:
                     logger.info(fin_call.json())
