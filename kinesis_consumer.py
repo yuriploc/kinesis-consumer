@@ -8,11 +8,14 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-BC_ADMIN_URL = os.environ["BC_HOST"]
+BC_ADMIN_URL = os.environ["BC_ADMIN_URL"]
 BC_KEY = os.environ["BC_KEY"]
 FINANCIAL_URL = os.environ["FINANCIAL_URL"]
 params = {"couponId": None}
-headers = {"Authorization": BC_KEY}
+headers = {
+    "Authorization": BC_KEY,
+    "Content-Type": "application/json"
+}
 
 # Convert bytes to str, if required
 def convert_str(s):
