@@ -59,7 +59,12 @@ def lambda_handler(event, context):
 
                 fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data))
                 logger.info("## RESPONSE FROM FINANCIAL API:")
-                logger.info(fin_call.json())
+                if fin_call.status_code == 200:
+                    logger.info(fin_call.json())
+                else:
+                    logger.info(fin_call)
+
+
 
             if operation_type == "UpdateRowsEvent":
                 logger.info("## UPDATE ROWS EVENT")
