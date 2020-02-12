@@ -31,8 +31,26 @@ def get_coupon_complete_data(coupon_id):
 
     return req.json()
 
+def get_coupon_id(operation_type, row_dict):
+    if operation_type == "WriteRowsEvent":
+        logger.info("## WRITE ROWS EVENT")
+        return row_dict["values"]["id"]
+
+    if operation_type == "UpdateRowsEvent":
+        logger.info("## UPDATE ROWS EVENT")
+        # before_values = data['row']['before_values']
+        after_values_row = row_dict["after_values"]
+
+        return after_values_row["id"]
+
+    if operation_type == "DeleteRowsEvent":
+        logger.info("## DELETE ROWS EVENT")
+
+        return row_dict["values"]["id"]
+
 
 def lambda_handler(event, context):
+    status_code = None
     for record in event["Records"]:
         # Kinesis data is base64 encoded so decode here
         data_b = base64.b64decode(record["kinesis"]["data"])
@@ -46,34 +64,21 @@ def lambda_handler(event, context):
             operation_type = data["type"]
             logger.info(operation_type)
 
-            coupon_data = None
+            coupon_id = get_coupon_id(operation_type, data["row"])
 
-            if operation_type == "WriteRowsEvent":
-                logger.info("## WRITE ROWS EVENT")
-                row = data["row"]["values"]
+            coupon_data = get_coupon_complete_data(coupon_id)
 
-                coupon_id = row["id"]
-                coupon_data = get_coupon_complete_data(coupon_id)
-
-                fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data), headers=content_type_dict)
-                logger.info("## RESPONSE FROM FINANCIAL API:")
-                if fin_call.status_code == 200:
-                    logger.info(fin_call.json())
-                else:
-                    logger.info(fin_call)
-
-
-
-            if operation_type == "UpdateRowsEvent":
-                logger.info("## UPDATE ROWS EVENT")
-                # before_values = data['row']['before_values']
-                after_values_row = data["row"]["after_values"]
-
-                coupon_id = after_values_row["id"]
-                coupon_data = get_coupon_complete_data(coupon_id)
+            fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data), headers=content_type_dict)
+            logger.info("## RESPONSE FROM FINANCIAL API:")
+            if fin_call.status_code == 200:
+                status_code = 200
+                logger.info(fin_call.json())
+            else:
+                status_code = 500
+                logger.info(fin_call)
 
     return {
-        "statusCode": 200,
+        "statusCode": status_code,
         "headers": {"Content-Type": "application/json"},
         "body": "",
     }
