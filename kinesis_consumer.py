@@ -11,6 +11,9 @@ logger.setLevel(logging.INFO)
 BC_ADMIN_URL = os.environ["BC_ADMIN_URL"]
 BC_KEY = os.environ["BC_KEY"]
 FINANCIAL_URL = os.environ["FINANCIAL_URL"]
+DELETE_EVENT = "DeleteRowsEvent"
+UPDATE_EVENT = "UpdateRowsEvent"
+WRITE_EVENT = "WriteRowsEvent"
 params = {"couponId": None}
 auth_dict = { "Authorization": BC_KEY }
 content_type_dict = { "Content-Type": "application/json" }
@@ -32,21 +35,28 @@ def get_coupon_complete_data(coupon_id):
     return req.json()
 
 def get_coupon_id(operation_type, row_dict):
-    if operation_type == "WriteRowsEvent":
-        logger.info("## WRITE ROWS EVENT")
+    """
+    Gets coupon id depending on the operation_type.
+
+    Parameters:
+    operation_type (string): Event type from MySQL
+    row_dict (dict): The dict with the row data
+
+    Returns:
+    coupon_id (int): Coupon id
+    """
+    logger.info("{} {}".format("##", operation_type))
+
+    if operation_type in [WRITE_EVENT, DELETE_EVENT]:
         return row_dict["values"]["id"]
 
-    if operation_type == "UpdateRowsEvent":
-        logger.info("## UPDATE ROWS EVENT")
+    if operation_type == UPDATE_EVENT:
         # before_values = data['row']['before_values']
         after_values_row = row_dict["after_values"]
 
         return after_values_row["id"]
 
-    if operation_type == "DeleteRowsEvent":
-        logger.info("## DELETE ROWS EVENT")
-
-        return row_dict["values"]["id"]
+    return -1
 
 
 def lambda_handler(event, context):
@@ -59,14 +69,15 @@ def lambda_handler(event, context):
         logger.info("## DATA")
         logger.info(data)
 
-        if data["table"] == "coupon":
-            logger.info("## COUPON TABLE")
+        table_name = data["table"]
+        if table_name == "coupon":
+            logger.info("{} {} {} ".format("##", table_name.upper(), "TABLE"))
             operation_type = data["type"]
-            logger.info(operation_type)
 
             coupon_id = get_coupon_id(operation_type, data["row"])
 
             coupon_data = get_coupon_complete_data(coupon_id)
+            coupon_data['deleted'] = operation_type == DELETE_EVENT or False
 
             fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data), headers=content_type_dict)
             logger.info("## RESPONSE FROM FINANCIAL API:")
