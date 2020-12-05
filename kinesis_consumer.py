@@ -77,7 +77,10 @@ def lambda_handler(event, context):
             coupon_id = get_coupon_id(operation_type, data["row"])
 
             coupon_data = get_coupon_complete_data(coupon_id)
-            coupon_data['deleted'] = operation_type == DELETE_EVENT or False
+            coupon_data["deleted"] = operation_type == DELETE_EVENT or False
+
+            if coupon_data["coupon"]["consume_time"] == 0
+                coupon_data["coupon"]["consume_time"] = None
 
             fin_call = requests.post(FINANCIAL_URL, data=json.dumps(coupon_data), headers=content_type_dict)
             logger.info("## RESPONSE FROM FINANCIAL API:")
